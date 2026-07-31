@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaSpLo2GPX-web</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.tile.openstreetmap.org; connect-src 'self' https://casplo2gpx-web.pop-orni.workers.dev https://nominatim.openstreetmap.org; font-src 'self';">
+  <link rel="icon" type="image/png" href="icona_CaSpLo2GPX_256.png">
+  <link rel="apple-touch-icon" href="icona_CaSpLo2GPX_256.png">
+
+  <!-- Leaflet CSS -->
+  <!-- SRI: calcola con: curl -s https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css | openssl dgst -sha384 -binary | openssl base64 -A -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="anonymous">
+  <!-- Leaflet.draw CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" crossorigin="anonymous">
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Header -->
+  <header id="app-header">
+    <div>
+      <h1>CaSpLo2GPX web</h1>
+      <div class="sub">Catasto Speleologico Lombardo → GPX</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="info-btn" id="btn-info">ℹ Origine dati</button>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <!-- Overlay mobile -->
+  <div class="panel-overlay" id="panel-overlay"></div>
+
+  <!-- Pannello laterale -->
+  <div class="panel">
+    <div class="panel-body">
+
+      <!-- Provincia -->
+      <div>
+        <div class="section-label">Provincia</div>
+        <select id="provincia">
+          <option value="">Tutta la Lombardia</option>
+          <option value="Bergamo">Bergamo</option>
+          <option value="Brescia">Brescia</option>
+          <option value="Como">Como</option>
+          <option value="Lecco">Lecco</option>
+          <option value="Pavia">Pavia</option>
+          <option value="Sondrio">Sondrio</option>
+          <option value="Varese">Varese</option>
+        </select>
+      </div>
+
+      <!-- Ricerca comune -->
+      <div>
+        <div class="section-label">Cerca comune</div>
+        <div class="search-row">
+          <input type="text" id="search-input" placeholder="es. Varenna" />
+          <button id="btn-search" title="Cerca">🔍</button>
+        </div>
+      </div>
+
+      <!-- Ricerca grotta -->
+      <div>
+        <div class="section-label">Cerca grotta</div>
+        <div class="search-row">
+          <input type="text" id="cave-search-input" placeholder="es. Grotta di Fiumelatte" />
+          <button id="btn-cave-search" title="Cerca grotta">🔍</button>
+        </div>
+        <div id="cave-search-results"></div>
+      </div>
+
+      <!-- Area mappa -->
+      <div>
+        <div class="section-label">Area sulla mappa</div>
+        <div class="area-row">
+          <span class="area-info" id="area-info">Nessuna area selezionata</span>
+          <button class="btn-sm" id="btn-undo"
+                   disabled title="Annulla ultimo vertice">↩</button>
+          <button class="btn-sm active" id="btn-draw"
+                  >✏ Disegna</button>
+          <button class="btn-sm danger" id="btn-clear-area"
+                   style="display:none">✗</button>
+        </div>
+      </div>
+
+      <!-- Nome file -->
+      <div>
+        <div class="section-label">Nome file (opzionale)</div>
+        <input type="text" id="filename" placeholder="generato automaticamente" />
+      </div>
+
+      <!-- Esporta -->
+      <button class="btn btn-primary" id="btn-export"
+               disabled>
+        ⬇ Esporta GPX
+      </button>
+
+      <!-- Progress -->
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-label" id="progress-label"></div>
+      </div>
+
+      <!-- Log -->
+      <div class="log-box" id="log" role="status" aria-live="polite" aria-atomic="false"></div>
+
+    </div>
+  </div>
+
+  <!-- Mappa -->
+  <div id="map"></div>
+  <footer class="app-footer">
+    <span>CaSpLo2GPX-web 1.0.0 &middot; AGPL-3.0 &middot; &copy; 2026</span>
+    <span id="footer-catasto-date"></span>
+  </footer>
+
+</div>
+
+<!-- Modal origine dati -->
+<div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <h2 id="modal-title">Origine dei Dati</h2>
+    <p>I dati del Catasto Speleologico Lombardo non sono prodotti da CaSpLo2GPX.</p>
+    <p><strong>Fonte:</strong>
+      <a href="https://www.speleolombardia.it" target="_blank" rel="noopener noreferrer">Catasto Speleologico Lombardo</a>
+    </p>
+    <p>I dati sono distribuiti con licenza <strong>Creative Commons Attribuzione –
+      Non Commerciale – Non Opere Derivate 3.0 Italia (CC BY-NC-ND 3.0 IT)</strong>.</p>
+    <p>CaSpLo2GPX effettua esclusivamente la conversione dei dati dal formato KML
+      al formato GPX.</p>
+    <p>
+      <a href="https://creativecommons.org/licenses/by-nc-nd/3.0/it/" target="_blank" rel="noopener noreferrer">
+        https://creativecommons.org/licenses/by-nc-nd/3.0/it/
+      </a>
+    </p>
+    <div id="modal-catasto-date" style="margin-top:12px;font-size:.82rem;color:#555;"></div>
+    <button class="modal-close">Chiudi</button>
+    <div style="clear:both"></div>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous"></script>
+<!-- Leaflet.draw JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js" crossorigin="anonymous"></script>
+
+<!-- App JS (ES modules) -->
+<!-- In sviluppo: usa moduli ES diretti -->
+<!-- In produzione (dopo npm run build): sostituire con: -->
+<!-- <script src="dist/bundle.js"></script> -->
+<script type="module" src="js/app.js"></script>
+
+
+</body>
+</html>
