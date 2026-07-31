@@ -5,6 +5,10 @@ Scarica il Catasto Speleologico Lombardo e lo converte in GPX direttamente nel b
 
 ---
 
+<img width="1920" height="869" alt="CaSpLo2GPX-web-07-31-2026_02_18_PM" src="https://github.com/user-attachments/assets/206935a6-e8b9-47fc-a4d0-706195bb11e9" />
+
+---
+
 ## Come si usa
 
 1. **Apri** la web app: il Catasto viene scaricato e visualizzato automaticamente sulla mappa.
