@@ -14,7 +14,7 @@
 const KML_URL   = 'https://www.speleolombardia.it/catasto/openkis_kml.php?mod=caves&lat=45,8&lon=9.5&zoom=8&iconsize=1.5';
 const CACHE_TTL = 60 * 60 * 24; // 24 ore
 
-const WORKER_VERSION = '1.0.0';
+const WORKER_VERSION = '1.0.1';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
@@ -30,12 +30,33 @@ function errorResponse(status, message) {
   });
 }
 
+// Domini autorizzati a chiamare il Worker (anti-abuse)
+// Aggiungere il proprio dominio GitHub Pages qui
+const ALLOWED_ORIGINS = [
+  'https://poporni.github.io/CaSpLo2GPX-web',
+  'http://localhost',
+  'http://127.0.0.1',
+];
+
 export default {
   async fetch(request, env, ctx) {
 
     // Preflight CORS
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
+    // Fix 4: controllo Referer/Origin per limitare accesso non autorizzato
+    const origin  = request.headers.get('Origin')  || '';
+    const referer = request.headers.get('Referer') || '';
+    const allowed = ALLOWED_ORIGINS.some(o =>
+      origin.startsWith(o) || referer.startsWith(o)
+    );
+    if (!allowed && origin !== '') {
+      return new Response(JSON.stringify({ error: 'Origine non autorizzata' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      });
     }
 
     const cache    = caches.default;

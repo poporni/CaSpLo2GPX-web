@@ -289,7 +289,7 @@ elBtnClear?.addEventListener('click', () => {
 
 // ── Avvio automatico ──────────────────────────────────────────────────────────
 async function init() {
-  log('CaSpLo2GPX web 1.0.0');
+  log('CaSpLo2GPX web 1.0.1');
   log('Scarica e converte il Catasto Speleologico Lombardo in GPX');
   log('');
   log('⬇  Download KML in corso…');

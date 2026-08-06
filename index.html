@@ -117,7 +117,7 @@
   <!-- Mappa -->
   <div id="map"></div>
   <footer class="app-footer">
-    <span>CaSpLo2GPX-web 1.0.0 &middot; AGPL-3.0 &middot; &copy; 2026</span>
+    <span>CaSpLo2GPX-web 1.0.1 &middot; AGPL-3.0 &middot; &copy; 2026</span>
     <span id="footer-catasto-date"></span>
   </footer>
 
@@ -146,15 +146,15 @@
   </div>
 </div>
 
-<!-- Leaflet JS -->
+<!--
+  SVILUPPO: CDN senza SRI (accettabile per sviluppo locale)
+  PRODUZIONE: eseguire "npm run build" e sostituire questi tag con:
+    <script src="dist/bundle.js"></script>
+  Il bundle include Leaflet, Leaflet.draw e tutto il codice app.
+  Nessuna dipendenza CDN = nessun problema SRI in produzione.
+-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous"></script>
-<!-- Leaflet.draw JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js" crossorigin="anonymous"></script>
-
-<!-- App JS (ES modules) -->
-<!-- In sviluppo: usa moduli ES diretti -->
-<!-- In produzione (dopo npm run build): sostituire con: -->
-<!-- <script src="dist/bundle.js"></script> -->
 <script type="module" src="js/app.js"></script>
 
 

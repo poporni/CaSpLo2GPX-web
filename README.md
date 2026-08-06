@@ -195,3 +195,24 @@ Prima versione pubblica.
 - Content Security Policy (CSP)
 - Accessibilità: `aria-live`, `role="dialog"`, focus trap nel modal
 - CI con GitHub Actions: lint + build automatici
+
+### 1.0.1
+Rilascio di sicurezza e qualità.
+
+**Sicurezza**
+- **SRI / CDN**: aggiunta strategia bundle-first con esbuild — in produzione Leaflet e Leaflet.draw vengono inclusi nel bundle locale (`dist/bundle.js`), eliminando la dipendenza da CDN e il relativo rischio di compromissione
+- **Referer/Origin check nel Worker**: il Cloudflare Worker ora verifica che le richieste provengano da domini autorizzati (`ALLOWED_ORIGINS`), limitando l'accesso non autorizzato alla quota gratuita
+- **DOMPurify import statico**: rimosso il caricamento dinamico con fallback silenzioso; DOMPurify viene ora importato staticamente e incluso nel bundle, garantendo che la sanitizzazione sia sempre attiva
+- **Source map esterne**: in produzione (`npm run build`) le source map vengono generate come file separati (`bundle.js.map`) invece di essere inline, evitando l'esposizione del codice sorgente nel bundle distribuito
+- **CSP**: mantenuta via meta tag (GitHub Pages non supporta header HTTP); documentata la migrazione a Cloudflare Pages per CSP via header
+- **npm audit**: aggiunto step di audit sicurezza nella pipeline CI
+
+**Qualità**
+- **`package.json`**: Leaflet e Leaflet.draw aggiunti come dipendenze npm (non più solo CDN); aggiunto script `prebuild` per pulizia automatica della cartella `dist/`
+- **CI aggiornata**: aggiunto step `npm audit --audit-level=high` dopo l'installazione delle dipendenze
+- **Versione bumped** a 1.0.1 in tutti i file (app.js, cloudflare-worker.js, package.json, footer HTML)
+
+**Note di aggiornamento**
+- Aggiornare `ALLOWED_ORIGINS` in `cloudflare-worker.js` con il proprio dominio GitHub Pages prima di fare il deploy del Worker
+- Eseguire `npm install` per ottenere le nuove dipendenze (Leaflet, Leaflet.draw, DOMPurify come pacchetti npm)
+

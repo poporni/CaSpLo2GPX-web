@@ -23,6 +23,9 @@ jobs:
       - name: Installa dipendenze
         run: npm ci
 
+      - name: Audit sicurezza
+        run: npm audit --audit-level=high || true
+
       - name: Lint
         run: npm run lint
 

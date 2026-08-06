@@ -13,18 +13,13 @@
  * @property {string} vaiUrl
  */
 
-// DOMPurify: layer aggiuntivo di sanitizzazione prima del parsing
-// Importato come modulo ES (disponibile via npm o CDN bundle)
-let _purify = null;
-try {
-  // In ambiente bundle (esbuild) DOMPurify viene incluso
-  const { default: DOMPurify } = await import('dompurify').catch(() => ({ default: null }));
-  _purify = DOMPurify;
-} catch (_) { /* fallback: solo DOMParser */ }
+// DOMPurify: import statico — incluso nel bundle esbuild in produzione.
+// In sviluppo (moduli ES diretti) viene caricato da node_modules.
+import DOMPurify from 'dompurify';
 
 function sanitizeHtml(html) {
-  if (_purify) {
-    return _purify.sanitize(html, {
+  if (typeof DOMPurify !== 'undefined' && DOMPurify.sanitize) {
+    return DOMPurify.sanitize(html, {
       ALLOWED_TAGS: ['a', 'b', 'i', 'strong', 'em', 'br', 'p'],
       ALLOWED_ATTR: ['href'],
     });

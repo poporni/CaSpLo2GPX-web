@@ -1,6 +1,6 @@
 {
   "name": "casplo2gpx-web",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Web app per scaricare e convertire il Catasto Speleologico Lombardo in GPX",
   "private": true,
   "scripts": {
@@ -8,21 +8,23 @@
     "lint":      "eslint js/ --ext .js",
     "format":    "prettier --write js/ css/ index.html",
     "prebuild":  "rm -rf dist && mkdir -p dist",
-    "build":     "esbuild js/app.js --bundle --minify --sourcemap --outfile=dist/bundle.js",
-    "build:dev": "esbuild js/app.js --bundle --sourcemap --outfile=dist/bundle.js",
+    "build":     "esbuild js/app.js --bundle --minify --sourcemap=external --outfile=dist/bundle.js --loader:.css=copy",
+    "build:dev": "esbuild js/app.js --bundle --sourcemap=inline --outfile=dist/bundle.js",
     "test":      "jest --experimental-vm-modules"
   },
-  "devDependencies": {
-    "esbuild":                    "^0.19.0",
-    "eslint":                     "^8",
-    "jest":                       "^29",
-    "@jest/globals":              "^29",
-    "jest-environment-jsdom":     "^29",
-    "prettier":                   "^3",
-    "serve":                      "^14"
-  },
   "dependencies": {
-    "dompurify": "^3"
+    "dompurify":   "^3",
+    "leaflet":     "^1.9.4",
+    "leaflet-draw": "^1.0.4"
+  },
+  "devDependencies": {
+    "esbuild":                "^0.19.0",
+    "eslint":                 "^8",
+    "jest":                   "^29",
+    "@jest/globals":          "^29",
+    "jest-environment-jsdom": "^29",
+    "prettier":               "^3",
+    "serve":                  "^14"
   },
   "jest": {
     "testEnvironment": "jsdom",
