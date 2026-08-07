@@ -14,7 +14,7 @@
 const KML_URL   = 'https://www.speleolombardia.it/catasto/openkis_kml.php?mod=caves&lat=45,8&lon=9.5&zoom=8&iconsize=1.5';
 const CACHE_TTL = 60 * 60 * 24; // 24 ore
 
-const WORKER_VERSION = '1.0.1';
+const WORKER_VERSION = '1.0.2';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
@@ -33,7 +33,7 @@ function errorResponse(status, message) {
 // Domini autorizzati a chiamare il Worker (anti-abuse)
 // Aggiungere il proprio dominio GitHub Pages qui
 const ALLOWED_ORIGINS = [
-  'https://poporni.github.io/CaSpLo2GPX-web',
+  'https://poporni.github.io',
   'http://localhost',
   'http://127.0.0.1',
 ];
