@@ -13,8 +13,8 @@
     "test":      "node --experimental-vm-modules node_modules/.bin/jest"
   },
   "dependencies": {
-    "dompurify":   "^3",
-    "leaflet":     "^1.9.4",
+    "dompurify":    "^3",
+    "leaflet":      "^1.9.4",
     "leaflet-draw": "^1.0.4"
   },
   "devDependencies": {
@@ -31,7 +31,7 @@
     "transform": {},
     "extensionsToTreatAsEsm": [".js"],
     "moduleNameMapper": {
-      "^(\.{1,2}/.*)\.js$": "$1"
+      "^(\\.\\.?/.+)\\.js$": "$1"
     }
   }
 }
