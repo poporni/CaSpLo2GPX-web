@@ -1,6 +1,6 @@
 {
   "name": "casplo2gpx-web",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Web app per scaricare e convertire il Catasto Speleologico Lombardo in GPX",
   "private": true,
   "scripts": {
@@ -10,7 +10,7 @@
     "prebuild":  "rm -rf dist && mkdir -p dist",
     "build":     "esbuild js/app.js --bundle --minify --sourcemap=external --outfile=dist/bundle.js --loader:.css=copy",
     "build:dev": "esbuild js/app.js --bundle --sourcemap=inline --outfile=dist/bundle.js",
-    "test":      "jest --experimental-vm-modules"
+    "test":      "node --experimental-vm-modules node_modules/.bin/jest"
   },
   "dependencies": {
     "dompurify":   "^3",
@@ -28,6 +28,10 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "transform": {}
+    "transform": {},
+    "extensionsToTreatAsEsm": [".js"],
+    "moduleNameMapper": {
+      "^(\.{1,2}/.*)\.js$": "$1"
+    }
   }
 }

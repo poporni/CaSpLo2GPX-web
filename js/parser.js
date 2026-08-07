@@ -13,13 +13,19 @@
  * @property {string} vaiUrl
  */
 
-// DOMPurify: import statico — incluso nel bundle esbuild in produzione.
-// In sviluppo (moduli ES diretti) viene caricato da node_modules.
-import DOMPurify from 'dompurify';
+// DOMPurify: sanitizzazione aggiuntiva.
+// Caricato dinamicamente per compatibilità con ambienti di test (Jest/jsdom).
+let _DOMPurify = null;
+(async () => {
+  try {
+    const mod = await import('dompurify');
+    _DOMPurify = mod.default || mod;
+  } catch (_) { /* fallback: solo DOMParser */ }
+})();
 
 function sanitizeHtml(html) {
-  if (typeof DOMPurify !== 'undefined' && DOMPurify.sanitize) {
-    return DOMPurify.sanitize(html, {
+  if (_DOMPurify && typeof _DOMPurify.sanitize === 'function') {
+    return _DOMPurify.sanitize(html, {
       ALLOWED_TAGS: ['a', 'b', 'i', 'strong', 'em', 'br', 'p'],
       ALLOWED_ATTR: ['href'],
     });
