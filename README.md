@@ -216,3 +216,16 @@ Rilascio di sicurezza e qualità.
 - Aggiornare `ALLOWED_ORIGINS` in `cloudflare-worker.js` con il proprio dominio GitHub Pages prima di fare il deploy del Worker
 - Eseguire `npm install` per ottenere le nuove dipendenze (Leaflet, Leaflet.draw, DOMPurify come pacchetti npm)
 
+### 1.0.2
+Rilascio di stabilità CI e fix Worker.
+
+**Fix CI**
+- Corretto il comando `jest`: sostituito `jest --experimental-vm-modules` (non riconosciuto) con `node --experimental-vm-modules node_modules/.bin/jest`
+- Aggiornato Node.js in CI da 20 a 24 (Node 20 deprecato su GitHub Actions)
+- Sostituito `npm ci` con `npm install` (non era presente `package-lock.json`)
+- Aggiunto `"type": "module"` in `package.json` per supporto ES modules in Jest
+- Rimosso `extensionsToTreatAsEsm: [".js"]` dalla configurazione Jest (conflitto con `type: module`)
+
+**Fix Cloudflare Worker**
+- Corretto `ALLOWED_ORIGINS`: il browser invia come `Origin` solo il dominio base (`https://poporni.github.io`) senza il path — il controllo ora corrisponde correttamente e il download del KML funziona da GitHub Pages
+
