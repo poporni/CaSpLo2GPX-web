@@ -3,6 +3,7 @@
   "version": "1.0.2",
   "description": "Web app per scaricare e convertire il Catasto Speleologico Lombardo in GPX",
   "private": true,
+  "type": "module",
   "scripts": {
     "serve":     "npx serve .",
     "lint":      "eslint js/ --ext .js",
@@ -29,7 +30,6 @@
   "jest": {
     "testEnvironment": "jsdom",
     "transform": {},
-    "extensionsToTreatAsEsm": [".js"],
     "moduleNameMapper": {
       "^(\\.\\.?/.+)\\.js$": "$1"
     }
