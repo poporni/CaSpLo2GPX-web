@@ -3,7 +3,7 @@
  * Scheda locale della grotta, renderizzata nel browser a partire dal KML.
  */
 
-import { getCaveDisplayName, getCaveKey } from './cave.js';
+import { formatMetric, getCaveDisplayName, getCaveElevation, getCaveKey } from './cave.js';
 
 let elOverlay = null;
 let elPanel = null;
@@ -104,16 +104,23 @@ function renderCave(cave) {
   const media = document.createElement('section');
   media.className = 'cave-details-media';
   media.setAttribute('aria-label', 'Foto');
-  if (cave.thumbnailUrl) {
+  const displayPhotoUrl = cave.photoUrl || cave.thumbnailUrl;
+  if (displayPhotoUrl) {
     const link = document.createElement('a');
-    link.href = cave.thumbnailUrl;
+    link.href = displayPhotoUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     const img = document.createElement('img');
-    img.src = cave.thumbnailUrl;
+    img.src = displayPhotoUrl;
     img.alt = `Foto di ${titleText}`;
     img.loading = 'lazy';
     img.decoding = 'async';
+    if (cave.photoUrl && cave.thumbnailUrl) {
+      img.addEventListener('error', () => {
+        img.src = cave.thumbnailUrl;
+        link.href = cave.thumbnailUrl;
+      }, { once: true });
+    }
     link.appendChild(img);
     media.appendChild(link);
   } else {
@@ -125,7 +132,7 @@ function renderCave(cave) {
 
   const facts = document.createElement('dl');
   facts.className = 'cave-details-facts';
-  addFact(facts, 'Quota', formatMetric(cave.elevation || cave.ele));
+  addFact(facts, 'Quota', formatMetric(getCaveElevation(cave)));
   addFact(facts, 'Sviluppo', formatMetric(cave.development));
   addFact(facts, 'Profondità', formatMetric(cave.depth));
   addFact(facts, 'Coordinate', `${cave.lat.toFixed(6)}, ${cave.lon.toFixed(6)}`);
@@ -219,13 +226,6 @@ async function copyText(text) {
   }
   document.body.removeChild(input);
   return ok;
-}
-
-function formatMetric(value) {
-  if (value === null || value === undefined || value === '') return '';
-  const text = String(value).trim();
-  if (!text) return '';
-  return /[a-zà-ù%]/i.test(text) ? text : `${text} m`;
 }
 
 function buildShareUrl(cave) {

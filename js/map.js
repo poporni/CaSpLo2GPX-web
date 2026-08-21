@@ -4,7 +4,7 @@
  */
 
 import { filterCaves } from './geometry.js';
-import { getCaveDisplayName } from './cave.js';
+import { formatMetric, getCaveDisplayName, getCaveElevation } from './cave.js';
 
 const BLU   = '#2E6DA4';
 const BLU_S = '#1A4F7A';
@@ -127,7 +127,7 @@ function buildCavePopup(cave) {
 
   const facts = document.createElement('div');
   facts.className = 'cave-popup-facts';
-  addPopupFact(facts, 'Quota', formatMetric(cave.elevation || cave.ele));
+  addPopupFact(facts, 'Quota', formatMetric(getCaveElevation(cave)));
   addPopupFact(facts, 'Sviluppo', formatMetric(cave.development));
   addPopupFact(facts, 'Profondità', formatMetric(cave.depth));
   root.appendChild(facts);
@@ -175,13 +175,6 @@ function addPopupFact(root, label, value) {
   const item = document.createElement('span');
   item.textContent = `${label}: ${value}`;
   root.appendChild(item);
-}
-
-function formatMetric(value) {
-  if (value === null || value === undefined || value === '') return '';
-  const text = String(value).trim();
-  if (!text) return '';
-  return /[a-zà-ù%]/i.test(text) ? text : `${text} m`;
 }
 
 function _renderClustered(caves, zoom) {

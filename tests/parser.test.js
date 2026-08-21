@@ -64,6 +64,33 @@ const UNSAFE_KML = `<?xml version="1.0" encoding="UTF-8"?>
 </Folder>
 </kml>`;
 
+const REAL_WORLD_KML = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.1">
+<Folder><name>ctl_caves</name>
+  <Placemark>
+    <name>LO2192-GROTTA DEL FO&amp;amp;#039; DI BARNI</name>
+    <description><![CDATA[
+      <em>BÜS DE LA PISSALONGA</em><br />
+      <img src="https://www.speleolombardia.it/catasto/misc/fndatabase/ctl_caves/2192/photo1/thumbs/2192 LO foto ingresso Marco Bonelli e Felicita Spreafico.jpg.jpg" />
+      <br />Q. SV.35 P.14.2
+      <a href="https://www.speleolombardia.it/catasto/it/caves/view/2192/">Apri</a>
+      <a href="https://www.google.it/maps/dir//45.9050051,9.2605437/">Vai a</a>
+    ]]></description>
+    <Point><coordinates>9.2605437,45.9050051,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+    <name>LO2549-GROTTA DELLA SORGENTE</name>
+    <description><![CDATA[
+      <img src="https://www.speleolombardia.it/catasto/misc/fndatabase/ctl_caves/2549/photo1/thumbs/2549 LO foto ingresso Andrea Ferrario.JPG.jpg" />
+      <br />Q. SV.5 P.0.3
+      <a href="https://www.speleolombardia.it/catasto/it/caves/view/2549/">Apri</a>
+      <a href="https://www.google.it/maps/dir//45.9041877,9.2637888/">Vai a</a>
+    ]]></description>
+    <Point><coordinates>9.2637888,45.9041877,0</coordinates></Point>
+  </Placemark>
+</Folder>
+</kml>`;
+
 const MULTI_KML = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://earth.google.com/kml/2.1">
 <Folder><name>ctl_caves</name>
@@ -119,6 +146,7 @@ describe('parseKml', () => {
     expect(grotta.code).toBe('LO42');
     expect(grotta.name).toBe('GROTTA CON FOTO - RAMO NORD');
     expect(grotta.thumbnailUrl).toBe('https://www.speleolombardia.it/catasto/thumbs/foto.jpg');
+    expect(grotta.photoUrl).toBe('');
     expect(grotta.synonyms).toBe('Buco del Test');
     expect(grotta.elevation).toBe('1234');
     expect(grotta.development).toBe('56');
@@ -135,6 +163,7 @@ describe('parseKml', () => {
     const result = parseKml(UNSAFE_KML, noop);
     const grotta = result[0];
     expect(grotta.thumbnailUrl).toBe('');
+    expect(grotta.photoUrl).toBe('');
     expect(grotta.sourceUrl).toBe('');
     expect(grotta.apriUrl).toBe('');
   });
@@ -144,6 +173,41 @@ describe('parseKml', () => {
     const grotta = result[0];
     expect(grotta.plain).not.toContain('alert');
     expect(grotta.plain).toContain('Q.10');
+  });
+
+  test('decodifica nomi con entità HTML annidate', () => {
+    const result = parseKml(REAL_WORLD_KML, noop);
+    const barni = result[0];
+    expect(barni.rawName).toBe("LO2192-GROTTA DEL FO' DI BARNI");
+    expect(barni.name).toBe("GROTTA DEL FO' DI BARNI");
+  });
+
+  test('estrae sinonimi da em senza confonderli con i campi metrici', () => {
+    const result = parseKml(REAL_WORLD_KML, noop);
+    const barni = result[0];
+    expect(barni.synonyms).toBe('BÜS DE LA PISSALONGA');
+    expect(barni.elevation).toBe('');
+    expect(barni.development).toBe('35');
+    expect(barni.depth).toBe('14.2');
+  });
+
+  test('non usa il campo successivo come valore quando una metrica è vuota', () => {
+    const result = parseKml(REAL_WORLD_KML, noop);
+    const sorgente = result[1];
+    expect(sorgente.elevation).toBe('');
+    expect(sorgente.development).toBe('5');
+    expect(sorgente.depth).toBe('0.3');
+  });
+
+  test('deriva una URL foto originale quando la thumbnail segue la convenzione OpenKIS', () => {
+    const result = parseKml(REAL_WORLD_KML, noop);
+    const sorgente = result[1];
+    expect(sorgente.thumbnailUrl).toBe(
+      'https://www.speleolombardia.it/catasto/misc/fndatabase/ctl_caves/2549/photo1/thumbs/2549%20LO%20foto%20ingresso%20Andrea%20Ferrario.JPG.jpg'
+    );
+    expect(sorgente.photoUrl).toBe(
+      'https://www.speleolombardia.it/catasto/misc/fndatabase/ctl_caves/2549/photo1/2549%20LO%20foto%20ingresso%20Andrea%20Ferrario.JPG'
+    );
   });
 
   test('carica più grotte', () => {
@@ -171,6 +235,7 @@ describe('parseKml', () => {
     expect(result[0]).toMatchObject({
       plain: '',
       thumbnailUrl: '',
+      photoUrl: '',
       sourceUrl: '',
       directionsUrl: '',
       sourceId: '',

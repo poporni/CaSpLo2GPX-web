@@ -18,6 +18,7 @@
  * @property {string} sourceUrl
  * @property {string} directionsUrl
  * @property {string} thumbnailUrl
+ * @property {string} photoUrl
  * @property {string} sourceId
  * @property {string} apriUrl
  * @property {string} vaiUrl
@@ -70,28 +71,88 @@ function normalizeImageUrl(value) {
   }
 }
 
-function cleanupText(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
+function derivePhotoUrl(thumbnailUrl) {
+  if (!thumbnailUrl) return '';
+  try {
+    const url = new URL(thumbnailUrl);
+    if (!url.pathname.includes('/photo1/thumbs/')) return '';
+
+    const decodedName = decodeURIComponent(url.pathname.split('/').pop() || '');
+    const hasGeneratedThumbSuffix =
+      /\.(?:jpe?g|png|gif|webp|tiff?|bmp)\.jpe?g$/i.test(decodedName);
+    if (!hasGeneratedThumbSuffix) return '';
+
+    url.pathname = url.pathname
+      .replace('/thumbs/', '/')
+      .replace(/\.jpe?g$/i, '');
+    const candidate = normalizeImageUrl(url.href);
+    return candidate && candidate !== thumbnailUrl ? candidate : '';
+  } catch (_) {
+    return '';
+  }
 }
 
-const FIELD_LABELS = [
-  'Q\\.?',
-  'Quota',
-  'SV\\.?',
-  'Sviluppo',
-  'P\\.?',
-  'Profondit[àa]',
-  'Sinonim[oi]',
-  'Synonyms?',
+function decodeEntities(value) {
+  let decoded = String(value || '');
+  for (let i = 0; i < 3; i++) {
+    const doc = new DOMParser().parseFromString(decoded, 'text/html');
+    const next = doc.documentElement?.textContent || decoded;
+    if (next === decoded) break;
+    decoded = next;
+  }
+  return decoded;
+}
+
+function cleanupText(value) {
+  return decodeEntities(value).replace(/\s+/g, ' ').trim();
+}
+
+const METRIC_LABELS = [
+  'Q\\s*[\\.:]',
+  'Quota\\s*:',
+  'SV\\s*[\\.:]',
+  'Sviluppo\\s*:',
+  'P\\s*[\\.:]',
+  'Profondit[àa]\\s*:',
 ].join('|');
 
-function extractField(text, labelPattern) {
+function extractTextField(text, labelPattern) {
   const pattern = new RegExp(
-    `(?:^|\\s)(?:${labelPattern})\\s*\\.?\\s*:?\\s*(.+?)(?=\\s+(?:${FIELD_LABELS})\\s*\\.?\\s*:?|$)`,
+    `(?:^|\\s)(?:${labelPattern})\\s*:?\\s*(.+?)(?=\\s+(?:${METRIC_LABELS})|$)`,
     'i'
   );
   const match = cleanupText(text).match(pattern);
   return match ? cleanupText(match[1]) : '';
+}
+
+function extractMetricField(text, labelPattern) {
+  const clean = cleanupText(text);
+  const pattern = new RegExp(`(?:^|[\\s;|,])(?:${labelPattern})\\s*`, 'i');
+  const match = pattern.exec(clean);
+  if (!match) return '';
+
+  const tail = clean.slice(match.index + match[0].length);
+  const nextField = new RegExp(`(?:^|[\\s;|,])(?:${METRIC_LABELS})`, 'i');
+  const end = tail.search(nextField);
+  const rawValue = cleanupText(end >= 0 ? tail.slice(0, end) : tail);
+  return normalizeMetricValue(rawValue);
+}
+
+function normalizeMetricValue(value) {
+  const match = cleanupText(value).match(/^[-+]?(?:\d+(?:[.,]\d+)?|\.\d+)(?:\s*(?:m|mt|metri))?$/i);
+  if (!match) return '';
+  return match[0]
+    .replace(',', '.')
+    .replace(/\s*(?:m|mt|metri)$/i, '')
+    .trim();
+}
+
+function extractSynonyms(doc, plain) {
+  const explicit = extractTextField(plain, 'Sinonim[oi]|Synonyms?');
+  if (explicit) return explicit;
+
+  const em = doc.querySelector('em');
+  return cleanupText(em?.textContent || '');
 }
 
 function extractSourceId(sourceUrl) {
@@ -133,6 +194,7 @@ function parsePlacemarkName(rawName) {
  *   sourceUrl: string,
  *   directionsUrl: string,
  *   thumbnailUrl: string,
+ *   photoUrl: string,
  *   sourceId: string,
  *   synonyms: string,
  *   elevation: string,
@@ -146,6 +208,7 @@ function parseDescription(html) {
     sourceUrl: '',
     directionsUrl: '',
     thumbnailUrl: '',
+    photoUrl: '',
     sourceId: '',
     synonyms: '',
     elevation: '',
@@ -158,12 +221,13 @@ function parseDescription(html) {
   const cleanHtml = sanitizeHtml(html);
   const doc = new DOMParser().parseFromString(cleanHtml, 'text/html');
   let sourceUrl = '', directionsUrl = '';
-  let thumbnailUrl = '';
+  let thumbnailUrl = '', photoUrl = '';
 
   for (const img of doc.querySelectorAll('img[src]')) {
     thumbnailUrl = normalizeImageUrl(img.getAttribute('src'));
     if (thumbnailUrl) break;
   }
+  photoUrl = derivePhotoUrl(thumbnailUrl);
 
   doc.querySelectorAll('a').forEach(a => {
     const label = (a.textContent || '').trim().toLowerCase();
@@ -188,11 +252,12 @@ function parseDescription(html) {
     sourceUrl,
     directionsUrl,
     thumbnailUrl,
+    photoUrl,
     sourceId: extractSourceId(sourceUrl),
-    synonyms: extractField(plain, 'Sinonim[oi]|Synonyms?'),
-    elevation: extractField(plain, 'Q\\.?|Quota'),
-    development: extractField(plain, 'SV\\.?|Sviluppo'),
-    depth: extractField(plain, 'P\\.?|Profondit[àa]'),
+    synonyms: extractSynonyms(doc, plain),
+    elevation: extractMetricField(plain, 'Q\\s*[\\.:]|Quota\\s*:'),
+    development: extractMetricField(plain, 'SV\\s*[\\.:]|Sviluppo\\s*:'),
+    depth: extractMetricField(plain, 'P\\s*[\\.:]|Profondit[àa]\\s*:'),
   };
 }
 
@@ -242,6 +307,7 @@ export function parseKml(xmlText, onProgress) {
         sourceUrl: details.sourceUrl,
         directionsUrl: details.directionsUrl,
         thumbnailUrl: details.thumbnailUrl,
+        photoUrl: details.photoUrl,
         sourceId: details.sourceId,
         // Alias storici mantenuti per compatibilità con export e test esistenti.
         apriUrl: details.sourceUrl,

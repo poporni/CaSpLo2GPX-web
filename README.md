@@ -24,6 +24,7 @@ I filtri provincia e area sono cumulativi e possono essere usati insieme o separ
 - **Clustering automatico** a zoom basso: i cerchi mostrano il numero di grotte nell'area. Aumenta lo zoom per vedere i marker individuali.
 - **Clic su un marker** → popup sintetico con codice, nome, dati principali, eventuale miniatura, pulsante "Dettagli" e link "Vai a".
 - **Scheda locale grotta**: pannello responsive con foto caricata solo all'apertura, quota, sviluppo, profondità, coordinate, ID OpenKIS, copia coordinate e link condivisibile `?cave=...`.
+- **Foto**: il popup usa la miniatura del KML; la scheda prova a usare la foto originale pubblica quando è ricavabile dalla convenzione OpenKIS, con fallback automatico alla miniatura.
 - **Ricerca comune**: scrivi il nome e premi Invio per centrare la mappa.
 - **Ricerca grotta**: cerca per nome tra tutte le grotte del catasto.
 
@@ -248,7 +249,8 @@ Vedi il file `LICENSE` per il testo completo della licenza.
 - Scheda dettaglio locale generata nel browser con dati già presenti nel KML OpenKIS
 - Estrazione strutturata di codice, nome, sinonimi, quota, sviluppo, profondità, ID OpenKIS e URL thumbnail
 - Popup Leaflet sintetico con pulsante "Dettagli" e link "Vai a"
-- Foto caricate lazy solo all'apertura del popup o della scheda
+- Foto caricate lazy solo all'apertura del popup o della scheda; nella scheda viene preferita la foto originale pubblica quando deducibile
+- Decodifica di entità HTML annidate nei nomi e parsing più restrittivo dei campi quota/sviluppo/profondità incompleti
 - Deep link locale con parametro `?cave=...`
 - Test parser per foto, ID, sanitizzazione e descrizioni incomplete
 - Dockerfile, `.dockerignore` e Makefile per sviluppo/test locale con o senza Docker

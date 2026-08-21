@@ -413,13 +413,14 @@ select:focus, input:focus { border-color: var(--blu); }
 .cave-details-placeholder {
   width: 100%;
   min-height: 180px;
-  max-height: 290px;
+  max-height: 360px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
 }
 .cave-details-media img {
   display: block;
-  object-fit: cover;
+  object-fit: contain;
+  background: #111;
 }
 .cave-details-placeholder {
   display: flex;
@@ -490,7 +491,7 @@ select:focus, input:focus { border-color: var(--blu); }
   .cave-details-media img,
   .cave-details-placeholder {
     min-height: 160px;
-    max-height: 240px;
+    max-height: 280px;
   }
   .cave-details-facts {
     grid-template-columns: 100px 1fr;
