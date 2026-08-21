@@ -253,6 +253,53 @@ select:focus, input:focus { border-color: var(--blu); }
 /* ── Mappa ─────────────────────────────────────────────────────────────────── */
 #map { grid-area: map; z-index: 1; }
 
+/* ── Popup grotta ──────────────────────────────────────────────────────────── */
+.cave-popup {
+  min-width: 190px;
+  max-width: 250px;
+  font-size: .85rem;
+}
+.cave-popup strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #111;
+}
+.cave-popup-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #444;
+  line-height: 1.35;
+}
+.cave-popup-thumb {
+  display: block;
+  width: 100%;
+  max-height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+}
+.cave-popup-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.cave-popup .btn-sm {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  text-decoration: none;
+}
+.cave-popup-details {
+  background: var(--blu);
+  border-color: var(--blu);
+  color: #fff;
+}
+.cave-popup-details:hover { background: var(--blu-s); }
+.cave-popup-link { color: #1a1a1a; }
+
 /* ── Cluster label ─────────────────────────────────────────────────────────── */
 .cluster-label {
   background: transparent !important;
@@ -291,6 +338,164 @@ select:focus, input:focus { border-color: var(--blu); }
   background: var(--blu); color: #fff;
   border: none; border-radius: 6px;
   padding: 7px 18px; cursor: pointer; font-size: .88rem;
+}
+
+/* ── Scheda dettaglio grotta ───────────────────────────────────────────────── */
+.details-open { overflow: hidden; }
+.cave-details-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  justify-content: flex-end;
+  background: rgba(0,0,0,.34);
+}
+.cave-details-overlay.open { display: flex; }
+.cave-details-panel {
+  position: relative;
+  width: min(480px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  background: #fff;
+  box-shadow: -8px 0 28px rgba(0,0,0,.22);
+  padding: 24px 26px 30px;
+}
+.cave-details-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #fff;
+  color: #222;
+  cursor: pointer;
+  font-size: 1.35rem;
+  line-height: 1;
+  z-index: 1;
+}
+.cave-details-close:hover { background: var(--bg); }
+.cave-details-content {
+  clear: both;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.cave-details-header {
+  padding-right: 12px;
+}
+.cave-details-code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid rgba(46,109,164,.22);
+  border-radius: 6px;
+  color: var(--blu-s);
+  background: #eef5fa;
+  font-size: .78rem;
+  font-weight: 700;
+}
+.cave-details-header h2 {
+  margin-top: 8px;
+  font-size: 1.35rem;
+  line-height: 1.18;
+  color: #111;
+}
+.cave-details-synonyms {
+  margin-top: 7px;
+  color: #555;
+  font-size: .9rem;
+  line-height: 1.45;
+}
+.cave-details-media img,
+.cave-details-placeholder {
+  width: 100%;
+  min-height: 180px;
+  max-height: 290px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.cave-details-media img {
+  display: block;
+  object-fit: cover;
+}
+.cave-details-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--dim);
+  font-size: .9rem;
+}
+.cave-details-facts {
+  display: grid;
+  grid-template-columns: minmax(110px, .7fr) 1fr;
+  gap: 9px 14px;
+  font-size: .92rem;
+}
+.cave-details-facts dt {
+  color: var(--dim);
+  font-weight: 700;
+}
+.cave-details-facts dd {
+  color: #222;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cave-details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cave-details-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+.cave-details-source {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.cave-details-source h3 {
+  font-size: .82rem;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 6px;
+}
+.cave-details-source p {
+  color: #444;
+  font-size: .86rem;
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+.cave-details-source a {
+  color: var(--blu);
+  font-size: .88rem;
+}
+
+@media (max-width: 720px) {
+  .cave-details-overlay {
+    z-index: 800;
+    padding-top: 48px;
+  }
+  .cave-details-panel {
+    width: 100%;
+    padding: 16px 18px 58px;
+  }
+  .cave-details-header h2 { font-size: 1.18rem; }
+  .cave-details-media img,
+  .cave-details-placeholder {
+    min-height: 160px;
+    max-height: 240px;
+  }
+  .cave-details-facts {
+    grid-template-columns: 100px 1fr;
+    font-size: .88rem;
+  }
 }
 
 /* ── Status bar catasto ────────────────────────────────────────────────────── */

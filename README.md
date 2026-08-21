@@ -14,16 +14,20 @@ Scarica il Catasto Speleologico Lombardo e lo converte in GPX direttamente nel b
 1. **Apri** la web app: il Catasto viene scaricato e visualizzato automaticamente sulla mappa.
 2. *(Opzionale)* Seleziona una **provincia** dal menu a tendina per filtrare le grotte.
 3. *(Opzionale)* Clicca **✏ Disegna** per tracciare un'area sulla mappa: solo le grotte dentro l'area verranno incluse nel GPX. Usa **↩** per annullare l'ultimo vertice, **✗** per cancellare l'area.
-4. Clicca **⬇ Esporta GPX** per scaricare il file.
+4. Clicca un marker e usa **Dettagli** per aprire la scheda locale della grotta, oppure **Vai a** per la navigazione.
+5. Clicca **⬇ Esporta GPX** per scaricare il file.
 
 I filtri provincia e area sono cumulativi e possono essere usati insieme o separatamente.
 
 ### Funzionalità della mappa
 - **Zoom** con la rotella del mouse o con i tasti +/−; **sposta** con il drag.
 - **Clustering automatico** a zoom basso: i cerchi mostrano il numero di grotte nell'area. Aumenta lo zoom per vedere i marker individuali.
-- **Clic su un marker** → popup con nome, dati e link "Apri scheda" / "Vai a Google Maps".
+- **Clic su un marker** → popup sintetico con codice, nome, dati principali, eventuale miniatura, pulsante "Dettagli" e link "Vai a".
+- **Scheda locale grotta**: pannello responsive con foto caricata solo all'apertura, quota, sviluppo, profondità, coordinate, ID OpenKIS, copia coordinate e link condivisibile `?cave=...`.
 - **Ricerca comune**: scrivi il nome e premi Invio per centrare la mappa.
 - **Ricerca grotta**: cerca per nome tra tutte le grotte del catasto.
+
+Le schede locali usano solo i dati già pubblicati nel KML OpenKIS. Non viene fatto scraping delle pagine protette e non vengono avviate richieste automatiche alle URL `op=view`.
 
 ---
 
@@ -41,6 +45,50 @@ npm run serve
 
 Poi apri `http://localhost:3000` nel browser.
 
+Con il Makefile:
+
+```bash
+make install
+make serve
+```
+
+Il Makefile espone anche i target principali:
+
+```bash
+make lint
+make test
+make build
+make check
+```
+
+`make check` esegue lint, test e build.
+
+---
+
+## Docker
+
+Per testare senza installare Node.js sul sistema host:
+
+```bash
+make docker-build
+make docker-run
+```
+
+Poi apri `http://localhost:3000`.
+
+Comandi equivalenti senza Makefile:
+
+```bash
+docker build -t casplo2gpx-web .
+docker run --rm -it -p 3000:3000 --name casplo2gpx-web casplo2gpx-web
+```
+
+Per eseguire i test dentro l'immagine:
+
+```bash
+make docker-test
+```
+
 ---
 
 ## Lint e formattazione
@@ -53,6 +101,13 @@ npm run lint
 npm run format
 ```
 
+Equivalenti Makefile:
+
+```bash
+make lint
+make format
+```
+
 ---
 
 ## Build produzione
@@ -61,6 +116,12 @@ Il progetto usa moduli ES nativi in sviluppo. Per produzione si può generare un
 
 ```bash
 npm run build
+```
+
+Equivalente Makefile:
+
+```bash
+make build
 ```
 
 Questo produce `dist/bundle.js`. Per usarlo in produzione, sostituire in `index.html`:
@@ -110,6 +171,9 @@ Il primo utente di ogni giornata aggiorna la cache Cloudflare; tutti gli altri r
 CaSpLo2GPX-web/
 ├── index.html
 ├── package.json
+├── Makefile
+├── Dockerfile
+├── .dockerignore
 ├── .eslintrc.json
 ├── cloudflare-worker.js      ← codice del Cloudflare Worker
 ├── icona_CaSpLo2GPX_256.png
@@ -120,6 +184,8 @@ CaSpLo2GPX-web/
 │   └── style.css
 └── js/
     ├── app.js                ← controller principale
+    ├── cave.js               ← helper nome e deep-link grotta
+    ├── details.js            ← scheda locale grotta e foto lazy-loaded
     ├── map.js                ← Leaflet, clustering, disegno area
     ├── parser.js             ← parsing KML
     ├── exporter.js           ← generazione e download GPX
@@ -137,7 +203,7 @@ I dati del Catasto Speleologico Lombardo non sono prodotti da CaSpLo2GPX web.
 
 I dati sono distribuiti con licenza **Creative Commons Attribuzione – Non Commerciale – Non Opere Derivate 3.0 Italia (CC BY-NC-ND 3.0 IT)**.
 
-CaSpLo2GPX web effettua esclusivamente la conversione dei dati dal formato KML al formato GPX.
+CaSpLo2GPX web effettua esclusivamente la conversione dei dati dal formato KML al formato GPX e la visualizzazione locale delle informazioni già presenti nel KML. Il link al portale ufficiale resta indicato come fonte, ma la scheda ufficiale può richiedere autorizzazione.
 
 **Licenza:** CC BY-NC-ND 3.0 Italia
 https://creativecommons.org/licenses/by-nc-nd/3.0/it/
@@ -168,6 +234,7 @@ Vedi il file `LICENSE` per il testo completo della licenza.
 ### Per sviluppare
 - Node.js 18 o superiore
 - `npm install` per le dipendenze di sviluppo
+- Docker, opzionale, per usare i target `make docker-*`
 
 ### Per il Cloudflare Worker
 - Account Cloudflare gratuito
@@ -176,6 +243,15 @@ Vedi il file `LICENSE` per il testo completo della licenza.
 ---
 
 ## Cronologia versioni
+
+### Fork in sviluppo
+- Scheda dettaglio locale generata nel browser con dati già presenti nel KML OpenKIS
+- Estrazione strutturata di codice, nome, sinonimi, quota, sviluppo, profondità, ID OpenKIS e URL thumbnail
+- Popup Leaflet sintetico con pulsante "Dettagli" e link "Vai a"
+- Foto caricate lazy solo all'apertura del popup o della scheda
+- Deep link locale con parametro `?cave=...`
+- Test parser per foto, ID, sanitizzazione e descrizioni incomplete
+- Dockerfile, `.dockerignore` e Makefile per sviluppo/test locale con o senza Docker
 
 ### 1.0.0
 Prima versione pubblica.
@@ -228,4 +304,3 @@ Rilascio di stabilità CI e fix Worker.
 
 **Fix Cloudflare Worker**
 - Corretto `ALLOWED_ORIGINS`: il browser invia come `Origin` solo il dominio base (`https://poporni.github.io`) senza il path — il controllo ora corrisponde correttamente e il download del KML funziona da GitHub Pages
-

@@ -7,13 +7,17 @@
 import { fetchKml }                       from './downloader.js';
 import { parseKml }                       from './parser.js';
 import { filterCaves }                    from './geometry.js';
+import { getCaveDisplayName }             from './cave.js';
+import { initCaveDetails, openCaveDetails,
+         setCaveDetailsCaves }             from './details.js';
 import { generateGpx, downloadGpx,
          buildFilename }                  from './exporter.js';
 import { map, setCaves, setProvince,
          renderCaves, toggleDraw,
          isDrawing, undoLastVertex,
          clearArea, getDrawnLayer,
-         searchComune, highlightCave }    from './map.js';
+         searchComune, highlightCave,
+         setCaveDetailsHandler }          from './map.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const State = {
@@ -157,6 +161,17 @@ elBtnInfo?.addEventListener('click', openModal);
 elModalClose?.addEventListener('click', closeModal);
 elModal?.addEventListener('click', e => { if (e.target === elModal) closeModal(); });
 
+// ── Scheda dettaglio grotta ─────────────────────────────────────────────────
+initCaveDetails({
+  caves: State.allCaves,
+  onFocusCave: cave => {
+    map.setView([cave.lat, cave.lon], 14);
+    highlightCave(cave);
+    closePanel();
+  },
+});
+setCaveDetailsHandler(cave => openCaveDetails(cave));
+
 // ── Provincia ─────────────────────────────────────────────────────────────────
 elProvincia?.addEventListener('change', () => {
   setProvince(elProvincia.value);
@@ -197,7 +212,7 @@ function onCaveSearch() {
   if (!q || !State.allCaves.length) return;
 
   const matches = State.allCaves
-    .filter(c => c.name.toLowerCase().includes(q))
+    .filter(c => caveSearchText(c).includes(q))
     .slice(0, 20);
 
   if (!matches.length) {
@@ -209,17 +224,26 @@ function onCaveSearch() {
   matches.forEach(c => {
     const div = document.createElement('div');
     div.className   = 'cave-result-item';
-    div.textContent = c.name;
+    div.textContent = getCaveDisplayName(c);
     div.addEventListener('click', () => {
       map.setView([c.lat, c.lon], 14);
       elCaveResults.classList.remove('visible');
-      if (elCaveSearch) elCaveSearch.value = c.name;
+      if (elCaveSearch) elCaveSearch.value = getCaveDisplayName(c);
       highlightCave(c);
       closePanel();   // Fix 1: chiudi hamburger su mobile dopo selezione
     });
     elCaveResults.appendChild(div);
   });
   elCaveResults.classList.add('visible');
+}
+
+function caveSearchText(cave) {
+  return [
+    cave.name,
+    cave.rawName,
+    cave.code,
+    cave.synonyms,
+  ].filter(Boolean).join(' ').toLowerCase();
 }
 
 // Binding ricerca grotta — sia click che touchend per mobile
@@ -289,7 +313,7 @@ elBtnClear?.addEventListener('click', () => {
 
 // ── Avvio automatico ──────────────────────────────────────────────────────────
 async function init() {
-  log('CaSpLo2GPX web 1.0.1');
+  log('CaSpLo2GPX web 1.0.2');
   log('Scarica e converte il Catasto Speleologico Lombardo in GPX');
   log('');
   log('⬇  Download KML in corso…');
@@ -304,6 +328,7 @@ async function init() {
     log(fromCache ? '✓  KML letto dalla cache Cloudflare' : '✓  KML scaricato');
 
     State.allCaves = parseKml(kmlText, (pct, label) => setProgress(pct, label));
+    setCaveDetailsCaves(State.allCaves);
     log(`✓  ${State.allCaves.length} grotte caricate`);
 
     setProgress(95, 'Rendering mappa…');

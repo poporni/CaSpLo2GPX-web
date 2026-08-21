@@ -30,6 +30,40 @@ const MINIMAL_KML = `<?xml version="1.0" encoding="UTF-8"?>
 </Folder>
 </kml>`;
 
+const PHOTO_KML = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.1">
+<Folder><name>ctl_caves</name>
+  <Placemark>
+    <name>LO42-GROTTA CON FOTO - RAMO NORD</name>
+    <description><![CDATA[
+      Sinonimi: Buco del Test<br>
+      Q. 1234 SV. 56 P. -78
+      <img src="https://www.speleolombardia.it/catasto/thumbs/foto.jpg" onerror="alert(1)">
+      <a href="https://www.speleolombardia.it/catasto/index.php?mod=caves&amp;op=view&amp;id=987">Apri</a>
+      <a href="https://www.google.it/maps/dir//46.1,9.8/">Vai a</a>
+    ]]></description>
+    <Point><coordinates>9.8,46.1,1234</coordinates></Point>
+  </Placemark>
+</Folder>
+</kml>`;
+
+const UNSAFE_KML = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.1">
+<Folder><name>ctl_caves</name>
+  <Placemark>
+    <name>LO99-GROTTA XSS</name>
+    <description><![CDATA[
+      Q.10 SV.20 P.30
+      <script>alert('xss')</script>
+      <img src="javascript:alert(1)">
+      <img src="https://evil.example/foto.jpg">
+      <a href="javascript:alert(1)">Apri</a>
+    ]]></description>
+    <Point><coordinates>9.1,45.1,10</coordinates></Point>
+  </Placemark>
+</Folder>
+</kml>`;
+
 const MULTI_KML = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://earth.google.com/kml/2.1">
 <Folder><name>ctl_caves</name>
@@ -49,7 +83,9 @@ describe('parseKml', () => {
     const result = parseKml(MINIMAL_KML, noop);
     expect(result.length).toBeGreaterThanOrEqual(1);
     const grotta = result[0];
-    expect(grotta.name).toBe('LO1-GROTTA TEST');
+    expect(grotta.rawName).toBe('LO1-GROTTA TEST');
+    expect(grotta.code).toBe('LO1');
+    expect(grotta.name).toBe('GROTTA TEST');
     expect(grotta.lat).toBeCloseTo(45.9, 4);
     expect(grotta.lon).toBeCloseTo(9.6, 4);
     expect(grotta.ele).toBe(500);
@@ -72,6 +108,42 @@ describe('parseKml', () => {
     const grotta = result[0];
     expect(grotta.apriUrl).toContain('speleolombardia.it');
     expect(grotta.vaiUrl).toContain('google.it');
+    expect(grotta.sourceUrl).toBe(grotta.apriUrl);
+    expect(grotta.directionsUrl).toBe(grotta.vaiUrl);
+    expect(grotta.sourceId).toBe('1');
+  });
+
+  test('estrae foto, sinonimi e dati principali dalla descrizione', () => {
+    const result = parseKml(PHOTO_KML, noop);
+    const grotta = result[0];
+    expect(grotta.code).toBe('LO42');
+    expect(grotta.name).toBe('GROTTA CON FOTO - RAMO NORD');
+    expect(grotta.thumbnailUrl).toBe('https://www.speleolombardia.it/catasto/thumbs/foto.jpg');
+    expect(grotta.synonyms).toBe('Buco del Test');
+    expect(grotta.elevation).toBe('1234');
+    expect(grotta.development).toBe('56');
+    expect(grotta.depth).toBe('-78');
+    expect(grotta.sourceId).toBe('987');
+  });
+
+  test('lascia vuota la foto se il KML non contiene img valido', () => {
+    const result = parseKml(MINIMAL_KML, noop);
+    expect(result[0].thumbnailUrl).toBe('');
+  });
+
+  test('scarta URL immagine e link non http/https o fuori allowlist', () => {
+    const result = parseKml(UNSAFE_KML, noop);
+    const grotta = result[0];
+    expect(grotta.thumbnailUrl).toBe('');
+    expect(grotta.sourceUrl).toBe('');
+    expect(grotta.apriUrl).toBe('');
+  });
+
+  test('non include contenuti script nel testo plain', () => {
+    const result = parseKml(UNSAFE_KML, noop);
+    const grotta = result[0];
+    expect(grotta.plain).not.toContain('alert');
+    expect(grotta.plain).toContain('Q.10');
   });
 
   test('carica più grotte', () => {
@@ -92,5 +164,16 @@ describe('parseKml', () => {
     const empty = `<?xml version="1.0"?><kml xmlns="http://earth.google.com/kml/2.1"></kml>`;
     expect(() => parseKml(empty, noop)).not.toThrow();
     expect(parseKml(empty, noop)).toEqual([]);
+  });
+
+  test('gestisce descrizioni mancanti senza campi fantasma', () => {
+    const result = parseKml(MULTI_KML, noop);
+    expect(result[0]).toMatchObject({
+      plain: '',
+      thumbnailUrl: '',
+      sourceUrl: '',
+      directionsUrl: '',
+      sourceId: '',
+    });
   });
 });

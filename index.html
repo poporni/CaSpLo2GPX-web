@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CaSpLo2GPX-web</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.tile.openstreetmap.org; connect-src 'self' https://casplo2gpx-web.pop-orni.workers.dev https://nominatim.openstreetmap.org; font-src 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.tile.openstreetmap.org https://speleolombardia.it https://www.speleolombardia.it; connect-src 'self' https://casplo2gpx-web.pop-orni.workers.dev https://nominatim.openstreetmap.org; font-src 'self';">
   <link rel="icon" type="image/png" href="icona_CaSpLo2GPX_256.png">
   <link rel="apple-touch-icon" href="icona_CaSpLo2GPX_256.png">
 
@@ -121,6 +121,14 @@
     <span id="footer-catasto-date"></span>
   </footer>
 
+</div>
+
+<!-- Scheda locale grotta -->
+<div class="cave-details-overlay" id="cave-details-overlay" aria-hidden="true">
+  <aside class="cave-details-panel" id="cave-details-panel" role="dialog" aria-modal="true" aria-labelledby="cave-details-title">
+    <button class="cave-details-close" id="cave-details-close" type="button" aria-label="Chiudi dettagli">×</button>
+    <div class="cave-details-content" id="cave-details-content"></div>
+  </aside>
 </div>
 
 <!-- Modal origine dati -->
