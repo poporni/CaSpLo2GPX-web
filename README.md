@@ -25,10 +25,17 @@ I filtri provincia e area sono cumulativi e possono essere usati insieme o separ
 - **Clic su un marker** → popup sintetico con codice, nome, dati principali, eventuale miniatura, pulsante "Dettagli" e link "Vai a".
 - **Scheda locale grotta**: pannello responsive con foto caricata solo all'apertura, quota, sviluppo, profondità, coordinate, ID OpenKIS, copia coordinate e link condivisibile `?cave=...`.
 - **Foto**: il popup usa la miniatura del KML; la scheda prova a usare la foto originale pubblica quando è ricavabile dalla convenzione OpenKIS, con fallback automatico alla miniatura.
+- **Layer mappa**: puoi passare da OpenStreetMap standard a Tracestrack Topo dal pannello laterale.
 - **Ricerca comune**: scrivi il nome e premi Invio per centrare la mappa.
 - **Ricerca grotta**: cerca per nome tra tutte le grotte del catasto.
 
 Le schede locali usano solo i dati già pubblicati nel KML OpenKIS. Non viene fatto scraping delle pagine protette e non vengono avviate richieste automatiche alle URL `op=view`.
+
+### Layer Tracestrack Topo
+
+OpenStreetMap.org espone Tracestrack Topo come layer selezionabile con `layers=P`, ma i tile raster sono serviti da Tracestrack e richiedono una API key per l'uso diretto in applicazioni esterne. Per questo il fork non include chiavi nel repository: se scegli **Tracestrack Topo**, inserisci la tua API key Tracestrack nel campo dedicato. La key viene salvata solo nel `localStorage` del browser.
+
+Se la key non è presente o non è valida, l'app resta su OpenStreetMap standard e mostra un avviso nel log.
 
 ---
 
@@ -89,6 +96,47 @@ Per eseguire i test dentro l'immagine:
 ```bash
 make docker-test
 ```
+
+---
+
+## Backup archivistico OpenKIS
+
+Il repository include uno script standalone per creare un archivio locale dei dati pubblicamente esposti da OpenKIS, senza accedere a pagine protette o aggirare controlli di autorizzazione.
+
+Backup dati senza immagini:
+
+```bash
+npm run backup
+# oppure
+make backup
+```
+
+Backup completo con immagini:
+
+```bash
+npm run backup:full
+# oppure
+make backup-full
+```
+
+Lo script crea una directory `backups/openkis-<timestamp>/` con:
+
+- `raw/openkis_caves.kml`: KML pubblico grezzo
+- `raw/openkis_caves.json`: JSON pubblico grezzo, se disponibile
+- `data/caves.json`: dati normalizzati per ripristino locale
+- `data/caves.geojson`: punti geografici GeoJSON
+- `data/caves.csv`: tabella CSV
+- `data/media-index.json`: esito download immagini
+- `media/images/`: immagini scaricate, solo con `--include-images`
+
+Opzioni utili:
+
+```bash
+node scripts/backup-openkis.js --out backups/test --limit 20 --include-images
+node scripts/backup-openkis.js --help
+```
+
+Con `--include-images` viene scaricata una immagine per grotta: originale pubblica quando deducibile dalla convenzione OpenKIS, altrimenti miniatura. Il download è sequenziale e usa un piccolo delay per non stressare il server; se rilanciato, riusa i file già presenti salvo `--force`.
 
 ---
 
@@ -183,8 +231,9 @@ CaSpLo2GPX-web/
 │       └── ci.yml            ← lint + build automatici
 ├── css/
 │   └── style.css
-└── js/
+├── js/
     ├── app.js                ← controller principale
+    ├── baselayers.js         ← configurazione layer OpenStreetMap e Tracestrack
     ├── cave.js               ← helper nome e deep-link grotta
     ├── details.js            ← scheda locale grotta e foto lazy-loaded
     ├── map.js                ← Leaflet, clustering, disegno area
@@ -192,6 +241,8 @@ CaSpLo2GPX-web/
     ├── exporter.js           ← generazione e download GPX
     ├── geometry.js           ← filtri provincia e poligono
     └── downloader.js         ← fetch dal Cloudflare Worker
+└── scripts/
+    └── backup-openkis.js     ← backup archivistico KML/JSON/media pubblici
 ```
 
 ---
@@ -254,6 +305,8 @@ Vedi il file `LICENSE` per il testo completo della licenza.
 - Deep link locale con parametro `?cave=...`
 - Test parser per foto, ID, sanitizzazione e descrizioni incomplete
 - Dockerfile, `.dockerignore` e Makefile per sviluppo/test locale con o senza Docker
+- Script standalone per backup archivistico di KML, JSON normalizzato, GeoJSON, CSV e immagini pubbliche
+- Selettore layer mappa con supporto a Tracestrack Topo tramite API key personale salvata nel browser
 
 ### 1.0.0
 Prima versione pubblica.

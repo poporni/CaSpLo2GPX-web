@@ -8,6 +8,8 @@ import { fetchKml }                       from './downloader.js';
 import { parseKml }                       from './parser.js';
 import { filterCaves }                    from './geometry.js';
 import { getCaveDisplayName }             from './cave.js';
+import { MAP_LAYER_IDS, MAP_LAYER_STORAGE_KEY,
+         TRACESTRACK_KEY_STORAGE_KEY }     from './baselayers.js';
 import { initCaveDetails, openCaveDetails,
          setCaveDetailsCaves }             from './details.js';
 import { generateGpx, downloadGpx,
@@ -17,7 +19,8 @@ import { map, setCaves, setProvince,
          isDrawing, undoLastVertex,
          clearArea, getDrawnLayer,
          searchComune, highlightCave,
-         setCaveDetailsHandler }          from './map.js';
+         setCaveDetailsHandler,
+         setBaseLayer }                   from './map.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const State = {
@@ -38,6 +41,11 @@ const elAreaInfo    = document.getElementById('area-info');
 const elProvincia   = document.getElementById('provincia');
 const elSearch      = document.getElementById('search-input');
 const elBtnSearch   = document.getElementById('btn-search');
+const elMapLayer    = document.getElementById('map-layer');
+const elTracesKeyRow = document.getElementById('tracestrack-key-row');
+const elTracesKey   = document.getElementById('tracestrack-key');
+const elBtnSaveTracesKey = document.getElementById('btn-save-tracestrack-key');
+const elMapLayerNote = document.getElementById('map-layer-note');
 const elCaveSearch  = document.getElementById('cave-search-input');
 const elBtnCaveSrch = document.getElementById('btn-cave-search');
 const elCaveResults = document.getElementById('cave-search-results');
@@ -58,6 +66,7 @@ if (elBtnUndo) elBtnUndo.style.display = 'none';
 const domCheck = {
   'btn-search':      elBtnSearch,
   'btn-cave-search': elBtnCaveSrch,
+  'map-layer':       elMapLayer,
   'btn-draw':        elBtnDraw,
   'btn-undo':        elBtnUndo,
   'btn-export':      elBtnExport,
@@ -77,6 +86,99 @@ function setProgress(pct, label) {
   elLabel.textContent = label;
 }
 function hideProgress() { elProgress.classList.remove('visible'); }
+
+// ── Persistenza impostazioni UI ──────────────────────────────────────────────
+function loadSetting(key) {
+  try {
+    return localStorage.getItem(key) || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function saveSetting(key, value) {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch (_) {}
+}
+
+// ── Layer mappa ──────────────────────────────────────────────────────────────
+function getTracestrackKey() {
+  return elTracesKey?.value.trim() || '';
+}
+
+function setMapLayerNote(message) {
+  if (!elMapLayerNote) return;
+  elMapLayerNote.textContent = message || '';
+  elMapLayerNote.hidden = !message;
+}
+
+function updateMapLayerKeyUi(message = '') {
+  const wantsTracestrack = elMapLayer?.value === MAP_LAYER_IDS.TRACESTRACK_TOPO;
+  if (elTracesKeyRow) elTracesKeyRow.hidden = !wantsTracestrack;
+  setMapLayerNote(message);
+}
+
+function handleMapLayerTileError(layerId) {
+  if (layerId !== MAP_LAYER_IDS.TRACESTRACK_TOPO) return;
+  log('⚠  Tracestrack Topo non ha caricato i tile. Controlla API key e referrer.');
+  setBaseLayer(MAP_LAYER_IDS.OSM, { force: true });
+  if (elMapLayer) elMapLayer.value = MAP_LAYER_IDS.OSM;
+  saveSetting(MAP_LAYER_STORAGE_KEY, MAP_LAYER_IDS.OSM);
+  updateMapLayerKeyUi();
+}
+
+function applyMapLayerSelection({ persist = true, force = false } = {}) {
+  if (!elMapLayer) return;
+
+  const requestedId = elMapLayer.value;
+  const tracestrackKey = getTracestrackKey();
+  const result = setBaseLayer(requestedId, {
+    tracestrackKey,
+    force,
+    onTileError: handleMapLayerTileError,
+  });
+
+  if (!result.ok && result.reason === 'missing-tracestrack-key') {
+    if (persist) saveSetting(MAP_LAYER_STORAGE_KEY, requestedId);
+    updateMapLayerKeyUi('Inserisci una API key Tracestrack per caricare il layer topo.');
+    return;
+  }
+
+  if (persist) {
+    saveSetting(MAP_LAYER_STORAGE_KEY, result.layerId);
+    if (result.layerId === MAP_LAYER_IDS.TRACESTRACK_TOPO) {
+      saveSetting(TRACESTRACK_KEY_STORAGE_KEY, tracestrackKey);
+    }
+  }
+
+  elMapLayer.value = result.layerId;
+  updateMapLayerKeyUi();
+}
+
+function initMapLayerControls() {
+  if (!elMapLayer) return;
+
+  const savedKey = loadSetting(TRACESTRACK_KEY_STORAGE_KEY);
+  if (elTracesKey) elTracesKey.value = savedKey;
+
+  const savedLayer = loadSetting(MAP_LAYER_STORAGE_KEY);
+  if (savedLayer) elMapLayer.value = savedLayer;
+
+  updateMapLayerKeyUi();
+  applyMapLayerSelection({ persist: false, force: true });
+}
+
+elMapLayer?.addEventListener('change', () => applyMapLayerSelection());
+elBtnSaveTracesKey?.addEventListener('click', () => applyMapLayerSelection({ force: true }));
+elTracesKey?.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  applyMapLayerSelection({ force: true });
+});
+
+initMapLayerControls();
 
 // ── Footer data aggiornamento ─────────────────────────────────────────────────
 function setFooterDate(lastModified) {

@@ -3,6 +3,8 @@
  * Mappa Leaflet, clustering, disegno area, ricerca, highlight.
  */
 
+import { createBaseTileLayer, MAP_LAYER_IDS,
+         resolveMapLayerSelection } from './baselayers.js';
 import { filterCaves } from './geometry.js';
 import { formatMetric, getCaveDisplayName, getCaveElevation } from './cave.js';
 
@@ -15,13 +17,37 @@ export const map = L.map('map', {
   tap: false,   // Fix mobile: disabilita tap handler di Leaflet (causa doppi click)
 }).setView([45.65, 9.85], 8);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 19,
-}).addTo(map);
+let baseLayer = createBaseTileLayer(MAP_LAYER_IDS.OSM).addTo(map);
+let baseLayerId = MAP_LAYER_IDS.OSM;
 
 const cavesLayer   = L.layerGroup().addTo(map);
 const featureGroup = new L.FeatureGroup().addTo(map);
+
+export function getBaseLayerId() {
+  return baseLayerId;
+}
+
+export function setBaseLayer(requestedId, options = {}) {
+  const selection = resolveMapLayerSelection(requestedId, options.tracestrackKey);
+  if (!selection.ok) return selection;
+  if (selection.layerId === baseLayerId && !options.force) return selection;
+
+  const nextLayer = createBaseTileLayer(selection.layerId, {
+    tracestrackKey: options.tracestrackKey,
+  });
+  let tileErrorHandled = false;
+  nextLayer.on('tileerror', () => {
+    if (tileErrorHandled) return;
+    tileErrorHandled = true;
+    if (options.onTileError) options.onTileError(selection.layerId);
+  });
+
+  nextLayer.addTo(map);
+  if (baseLayer) map.removeLayer(baseLayer);
+  baseLayer = nextLayer;
+  baseLayerId = selection.layerId;
+  return selection;
+}
 
 // ── Stato draw ────────────────────────────────────────────────────────────────
 let drawnLayer   = null;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CaSpLo2GPX-web</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.tile.openstreetmap.org https://speleolombardia.it https://www.speleolombardia.it; connect-src 'self' https://casplo2gpx-web.pop-orni.workers.dev https://nominatim.openstreetmap.org; font-src 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.tile.openstreetmap.org https://tile.tracestrack.com https://speleolombardia.it https://www.speleolombardia.it; connect-src 'self' https://casplo2gpx-web.pop-orni.workers.dev https://nominatim.openstreetmap.org; font-src 'self';">
   <link rel="icon" type="image/png" href="icona_CaSpLo2GPX_256.png">
   <link rel="apple-touch-icon" href="icona_CaSpLo2GPX_256.png">
 
@@ -53,6 +53,20 @@
           <option value="Sondrio">Sondrio</option>
           <option value="Varese">Varese</option>
         </select>
+      </div>
+
+      <!-- Layer mappa -->
+      <div>
+        <div class="section-label">Layer mappa</div>
+        <select id="map-layer">
+          <option value="osm">OpenStreetMap</option>
+          <option value="tracestrack-topo">Tracestrack Topo</option>
+        </select>
+        <div class="map-layer-key-row" id="tracestrack-key-row" hidden>
+          <input type="password" id="tracestrack-key" placeholder="API key Tracestrack" autocomplete="off" spellcheck="false" />
+          <button class="btn-sm" id="btn-save-tracestrack-key" type="button" title="Salva API key">✓</button>
+        </div>
+        <div class="map-layer-note" id="map-layer-note" hidden></div>
       </div>
 
       <!-- Ricerca comune -->

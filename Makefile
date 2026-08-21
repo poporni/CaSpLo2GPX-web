@@ -2,7 +2,7 @@ PORT ?= 3000
 IMAGE ?= casplo2gpx-web
 CONTAINER ?= casplo2gpx-web
 
-.PHONY: help install serve lint format test build check clean docker-build docker-run docker-test docker-shell docker-stop docker-clean
+.PHONY: help install serve lint format test build check clean backup backup-full docker-build docker-run docker-test docker-shell docker-stop docker-clean
 
 help:
 	@printf "Target disponibili:\n"
@@ -14,6 +14,8 @@ help:
 	@printf "  make build         Genera dist/bundle.js\n"
 	@printf "  make check         Esegue lint, test e build\n"
 	@printf "  make clean         Rimuove dist\n"
+	@printf "  make backup        Crea backup KML/JSON senza immagini\n"
+	@printf "  make backup-full   Crea backup completo con immagini\n"
 	@printf "  make docker-build  Costruisce immagine Docker\n"
 	@printf "  make docker-run    Avvia app Docker su http://localhost:%s\n" "$(PORT)"
 	@printf "  make docker-test   Esegue test dentro Docker\n"
@@ -43,6 +45,12 @@ check: lint test build
 
 clean:
 	rm -rf dist
+
+backup:
+	npm run backup
+
+backup-full:
+	npm run backup:full
 
 docker-build:
 	docker build -t $(IMAGE) .

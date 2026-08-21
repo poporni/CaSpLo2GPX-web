@@ -151,7 +151,7 @@ header .info-btn:hover { background: rgba(255,255,255,.28); }
 }
 
 /* ── Controlli ─────────────────────────────────────────────────────────────── */
-select, input[type=text] {
+select, input[type=text], input[type=password] {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--border);
@@ -163,6 +163,25 @@ select, input[type=text] {
   transition: border-color .2s;
 }
 select:focus, input:focus { border-color: var(--blu); }
+
+.map-layer-key-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.map-layer-key-row[hidden] { display: none; }
+.map-layer-key-row input { flex: 1; min-width: 0; }
+.map-layer-key-row .btn-sm {
+  min-width: 38px;
+  padding-inline: 8px;
+  font-size: .92rem;
+}
+.map-layer-note {
+  margin-top: 5px;
+  color: var(--dim);
+  font-size: .76rem;
+  line-height: 1.35;
+}
 
 .search-row         { display: flex; gap: 6px; }
 .search-row input   { flex: 1; }
