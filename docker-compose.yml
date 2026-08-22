@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: casplo2gpx-web:local
-    container_name: casplo2gpx-web
     ports:
       - "3000:3000"
+    labels:
+      - com.getarcaneapp.arcane.updater=false
     restart: unless-stopped
