@@ -97,6 +97,14 @@ Per eseguire i test dentro l'immagine:
 make docker-test
 ```
 
+### Arcane / Unraid
+
+Su Unraid con Arcane usa il file `compose.yaml` incluso nel repository e avvia il progetto con **Build & Deploy**.
+Il servizio viene costruito localmente dal `Dockerfile` e pubblica la web app sulla porta `3000`.
+
+Il campo `pull_policy: build` evita che Arcane provi a scaricare `casplo2gpx-web:local` da un registry esterno:
+quel tag è pensato come immagine locale generata sul server.
+
 ---
 
 ## Backup archivistico OpenKIS
