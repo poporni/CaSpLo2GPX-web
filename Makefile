@@ -56,10 +56,10 @@ docker-build:
 	docker build -t $(IMAGE) .
 
 docker-run:
-	docker run --rm -it --name $(CONTAINER) -p $(PORT):3000 $(IMAGE)
+	docker run --rm -it --name $(CONTAINER) -p $(PORT):80 $(IMAGE)
 
 docker-test:
-	docker run --rm $(IMAGE) npm test
+	docker run --rm -v $(CURDIR):/app -w /app node:24-alpine sh -c "npm install --package-lock=false && npm test"
 
 docker-shell:
 	docker run --rm -it --entrypoint sh $(IMAGE)

@@ -1,12 +1,8 @@
-FROM node:24-alpine
+FROM nginx:alpine
 
-WORKDIR /app
+COPY index.html /usr/share/nginx/html/
+COPY css /usr/share/nginx/html/css
+COPY js /usr/share/nginx/html/js
+COPY icona_CaSpLo2GPX_256.png /usr/share/nginx/html/
 
-COPY package*.json ./
-RUN npm install --package-lock=false
-
-COPY . .
-
-EXPOSE 3000
-
-CMD ["npx", "serve", ".", "-l", "tcp://0.0.0.0:3000"]
+EXPOSE 80

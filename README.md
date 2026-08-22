@@ -88,10 +88,10 @@ Comandi equivalenti senza Makefile:
 
 ```bash
 docker build -t casplo2gpx-web .
-docker run --rm -it -p 3000:3000 --name casplo2gpx-web casplo2gpx-web
+docker run --rm -it -p 3000:80 --name casplo2gpx-web casplo2gpx-web
 ```
 
-Per eseguire i test dentro l'immagine:
+Per eseguire i test in un container Node.js temporaneo:
 
 ```bash
 make docker-test
@@ -100,10 +100,17 @@ make docker-test
 ### Arcane / Unraid
 
 Su Unraid con Arcane usa il file `docker-compose.yml` incluso nel repository e avvia il progetto con **Build & Deploy**.
-Il servizio viene costruito localmente dal `Dockerfile` e pubblica la web app sulla porta `3000`.
+Il servizio viene costruito localmente dal `Dockerfile` e pubblica la web app sulla porta host `3000`.
 
 Il file Compose non dichiara un campo `image:`: in questo modo Arcane/Compose generano l'immagine dal `build:`
 locale senza provare a scaricare un tag locale da un registry esterno.
+
+Se Arcane mostra un errore BuildKit come `failed to resolve source metadata ... no active sessions`,
+scarica prima l'immagine base sul Docker host di Unraid e poi rilancia **Build & Deploy**:
+
+```bash
+docker pull nginx:alpine
+```
 
 ---
 
