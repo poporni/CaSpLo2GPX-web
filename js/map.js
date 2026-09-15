@@ -3,7 +3,10 @@
  * Mappa Leaflet, clustering, disegno area, ricerca, highlight.
  */
 
+import { createBaseTileLayer, MAP_LAYER_IDS,
+         resolveMapLayerSelection } from './baselayers.js';
 import { filterCaves } from './geometry.js';
+import { formatMetric, getCaveDisplayName, getCaveElevation } from './cave.js';
 
 const BLU   = '#2E6DA4';
 const BLU_S = '#1A4F7A';
@@ -14,13 +17,37 @@ export const map = L.map('map', {
   tap: false,   // Fix mobile: disabilita tap handler di Leaflet (causa doppi click)
 }).setView([45.65, 9.85], 8);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 19,
-}).addTo(map);
+let baseLayer = createBaseTileLayer(MAP_LAYER_IDS.OSM).addTo(map);
+let baseLayerId = MAP_LAYER_IDS.OSM;
 
 const cavesLayer   = L.layerGroup().addTo(map);
 const featureGroup = new L.FeatureGroup().addTo(map);
+
+export function getBaseLayerId() {
+  return baseLayerId;
+}
+
+export function setBaseLayer(requestedId, options = {}) {
+  const selection = resolveMapLayerSelection(requestedId, options.tracestrackKey);
+  if (!selection.ok) return selection;
+  if (selection.layerId === baseLayerId && !options.force) return selection;
+
+  const nextLayer = createBaseTileLayer(selection.layerId, {
+    tracestrackKey: options.tracestrackKey,
+  });
+  let tileErrorHandled = false;
+  nextLayer.on('tileerror', () => {
+    if (tileErrorHandled) return;
+    tileErrorHandled = true;
+    if (options.onTileError) options.onTileError(selection.layerId);
+  });
+
+  nextLayer.addTo(map);
+  if (baseLayer) map.removeLayer(baseLayer);
+  baseLayer = nextLayer;
+  baseLayerId = selection.layerId;
+  return selection;
+}
 
 // ── Stato draw ────────────────────────────────────────────────────────────────
 let drawnLayer   = null;
@@ -89,8 +116,10 @@ export function clearArea() {
 // ── Rendering grotte ──────────────────────────────────────────────────────────
 let _allCaves = [];
 let _province = '';
+let _openCaveDetails = null;
 
 export function setProvince(p) { _province = p; }
+export function setCaveDetailsHandler(handler) { _openCaveDetails = handler; }
 
 export function setCaves(caves) {
   _allCaves = caves;
@@ -109,13 +138,69 @@ function _renderIndividual(caves) {
     const m = L.circleMarker([c.lat, c.lon], {
       radius: 5, fillColor: BLU, color: BLU_S, weight: 1, fillOpacity: .85,
     });
-    let popup = `<strong>${c.name}</strong>`;
-    if (c.plain)   popup += `<br><small>${c.plain}</small>`;
-    if (c.apriUrl) popup += `<br><a href="${c.apriUrl}" target="_blank" rel="noopener noreferrer">Apri scheda</a>`;
-    if (c.vaiUrl)  popup += ` · <a href="${c.vaiUrl}" target="_blank" rel="noopener noreferrer">Vai a</a>`;
-    m.bindPopup(popup);
+    m.bindPopup(() => buildCavePopup(c));
     cavesLayer.addLayer(m);
   });
+}
+
+function buildCavePopup(cave) {
+  const root = document.createElement('div');
+  root.className = 'cave-popup';
+
+  const title = document.createElement('strong');
+  title.textContent = getCaveDisplayName(cave);
+  root.appendChild(title);
+
+  const facts = document.createElement('div');
+  facts.className = 'cave-popup-facts';
+  addPopupFact(facts, 'Quota', formatMetric(getCaveElevation(cave)));
+  addPopupFact(facts, 'Sviluppo', formatMetric(cave.development));
+  addPopupFact(facts, 'Profondità', formatMetric(cave.depth));
+  root.appendChild(facts);
+
+  if (cave.thumbnailUrl) {
+    const img = document.createElement('img');
+    img.className = 'cave-popup-thumb';
+    img.src = cave.thumbnailUrl;
+    img.alt = `Foto di ${getCaveDisplayName(cave)}`;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    root.appendChild(img);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'cave-popup-actions';
+
+  const details = document.createElement('button');
+  details.type = 'button';
+  details.className = 'btn-sm cave-popup-details';
+  details.textContent = 'Dettagli';
+  details.disabled = !_openCaveDetails;
+  details.addEventListener('click', () => {
+    map.closePopup();
+    if (_openCaveDetails) _openCaveDetails(cave);
+  });
+  actions.appendChild(details);
+
+  if (cave.directionsUrl || cave.vaiUrl) {
+    const directions = document.createElement('a');
+    directions.className = 'btn-sm cave-popup-link';
+    directions.href = cave.directionsUrl || cave.vaiUrl;
+    directions.target = '_blank';
+    directions.rel = 'noopener noreferrer';
+    directions.textContent = 'Vai a';
+    actions.appendChild(directions);
+  }
+
+  root.appendChild(actions);
+  return root;
+}
+
+function addPopupFact(root, label, value) {
+  if (!value) return;
+  const item = document.createElement('span');
+  item.textContent = `${label}: ${value}`;
+  root.appendChild(item);
 }
 
 function _renderClustered(caves, zoom) {
@@ -152,7 +237,9 @@ export function highlightCave(cave) {
     radius: 14, fillColor: '#E05020', color: '#A03010',
     weight: 3, fillOpacity: .35, className: 'cave-highlight',
   }).addTo(map);
-  _highlightLayer.bindPopup(`<strong>${cave.name}</strong>`).openPopup();
+  const title = document.createElement('strong');
+  title.textContent = getCaveDisplayName(cave);
+  _highlightLayer.bindPopup(title).openPopup();
   setTimeout(() => {
     if (_highlightLayer) { map.removeLayer(_highlightLayer); _highlightLayer = null; }
   }, 8000);

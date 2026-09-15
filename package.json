@@ -6,12 +6,14 @@
   "type": "module",
   "scripts": {
     "serve":     "npx serve .",
-    "lint":      "eslint js/ --ext .js",
+    "lint":      "eslint js/ scripts/ --ext .js",
     "format":    "prettier --write js/ css/ index.html",
     "prebuild":  "rm -rf dist && mkdir -p dist",
     "build":     "esbuild js/app.js --bundle --minify --sourcemap=external --outfile=dist/bundle.js --loader:.css=copy",
     "build:dev": "esbuild js/app.js --bundle --sourcemap=inline --outfile=dist/bundle.js",
-    "test":      "node --experimental-vm-modules node_modules/.bin/jest"
+    "test":      "node --experimental-vm-modules node_modules/.bin/jest",
+    "backup":    "node scripts/backup-openkis.js",
+    "backup:full": "node scripts/backup-openkis.js --include-images"
   },
   "dependencies": {
     "dompurify":    "^3",

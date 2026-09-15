@@ -1,0 +1,10 @@
+services:
+  casplo2gpx-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    labels:
+      - com.getarcaneapp.arcane.updater=false
+    restart: unless-stopped

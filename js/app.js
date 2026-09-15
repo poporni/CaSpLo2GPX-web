@@ -7,13 +7,20 @@
 import { fetchKml }                       from './downloader.js';
 import { parseKml }                       from './parser.js';
 import { filterCaves }                    from './geometry.js';
+import { getCaveDisplayName }             from './cave.js';
+import { MAP_LAYER_IDS, MAP_LAYER_STORAGE_KEY,
+         TRACESTRACK_KEY_STORAGE_KEY }     from './baselayers.js';
+import { initCaveDetails, openCaveDetails,
+         setCaveDetailsCaves }             from './details.js';
 import { generateGpx, downloadGpx,
          buildFilename }                  from './exporter.js';
 import { map, setCaves, setProvince,
          renderCaves, toggleDraw,
          isDrawing, undoLastVertex,
          clearArea, getDrawnLayer,
-         searchComune, highlightCave }    from './map.js';
+         searchComune, highlightCave,
+         setCaveDetailsHandler,
+         setBaseLayer }                   from './map.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const State = {
@@ -34,6 +41,11 @@ const elAreaInfo    = document.getElementById('area-info');
 const elProvincia   = document.getElementById('provincia');
 const elSearch      = document.getElementById('search-input');
 const elBtnSearch   = document.getElementById('btn-search');
+const elMapLayer    = document.getElementById('map-layer');
+const elTracesKeyRow = document.getElementById('tracestrack-key-row');
+const elTracesKey   = document.getElementById('tracestrack-key');
+const elBtnSaveTracesKey = document.getElementById('btn-save-tracestrack-key');
+const elMapLayerNote = document.getElementById('map-layer-note');
 const elCaveSearch  = document.getElementById('cave-search-input');
 const elBtnCaveSrch = document.getElementById('btn-cave-search');
 const elCaveResults = document.getElementById('cave-search-results');
@@ -54,6 +66,7 @@ if (elBtnUndo) elBtnUndo.style.display = 'none';
 const domCheck = {
   'btn-search':      elBtnSearch,
   'btn-cave-search': elBtnCaveSrch,
+  'map-layer':       elMapLayer,
   'btn-draw':        elBtnDraw,
   'btn-undo':        elBtnUndo,
   'btn-export':      elBtnExport,
@@ -73,6 +86,99 @@ function setProgress(pct, label) {
   elLabel.textContent = label;
 }
 function hideProgress() { elProgress.classList.remove('visible'); }
+
+// ── Persistenza impostazioni UI ──────────────────────────────────────────────
+function loadSetting(key) {
+  try {
+    return localStorage.getItem(key) || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function saveSetting(key, value) {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch (_) {}
+}
+
+// ── Layer mappa ──────────────────────────────────────────────────────────────
+function getTracestrackKey() {
+  return elTracesKey?.value.trim() || '';
+}
+
+function setMapLayerNote(message) {
+  if (!elMapLayerNote) return;
+  elMapLayerNote.textContent = message || '';
+  elMapLayerNote.hidden = !message;
+}
+
+function updateMapLayerKeyUi(message = '') {
+  const wantsTracestrack = elMapLayer?.value === MAP_LAYER_IDS.TRACESTRACK_TOPO;
+  if (elTracesKeyRow) elTracesKeyRow.hidden = !wantsTracestrack;
+  setMapLayerNote(message);
+}
+
+function handleMapLayerTileError(layerId) {
+  if (layerId !== MAP_LAYER_IDS.TRACESTRACK_TOPO) return;
+  log('⚠  Tracestrack Topo non ha caricato i tile. Controlla API key e referrer.');
+  setBaseLayer(MAP_LAYER_IDS.OSM, { force: true });
+  if (elMapLayer) elMapLayer.value = MAP_LAYER_IDS.OSM;
+  saveSetting(MAP_LAYER_STORAGE_KEY, MAP_LAYER_IDS.OSM);
+  updateMapLayerKeyUi();
+}
+
+function applyMapLayerSelection({ persist = true, force = false } = {}) {
+  if (!elMapLayer) return;
+
+  const requestedId = elMapLayer.value;
+  const tracestrackKey = getTracestrackKey();
+  const result = setBaseLayer(requestedId, {
+    tracestrackKey,
+    force,
+    onTileError: handleMapLayerTileError,
+  });
+
+  if (!result.ok && result.reason === 'missing-tracestrack-key') {
+    if (persist) saveSetting(MAP_LAYER_STORAGE_KEY, requestedId);
+    updateMapLayerKeyUi('Inserisci una API key Tracestrack per caricare il layer topo.');
+    return;
+  }
+
+  if (persist) {
+    saveSetting(MAP_LAYER_STORAGE_KEY, result.layerId);
+    if (result.layerId === MAP_LAYER_IDS.TRACESTRACK_TOPO) {
+      saveSetting(TRACESTRACK_KEY_STORAGE_KEY, tracestrackKey);
+    }
+  }
+
+  elMapLayer.value = result.layerId;
+  updateMapLayerKeyUi();
+}
+
+function initMapLayerControls() {
+  if (!elMapLayer) return;
+
+  const savedKey = loadSetting(TRACESTRACK_KEY_STORAGE_KEY);
+  if (elTracesKey) elTracesKey.value = savedKey;
+
+  const savedLayer = loadSetting(MAP_LAYER_STORAGE_KEY);
+  if (savedLayer) elMapLayer.value = savedLayer;
+
+  updateMapLayerKeyUi();
+  applyMapLayerSelection({ persist: false, force: true });
+}
+
+elMapLayer?.addEventListener('change', () => applyMapLayerSelection());
+elBtnSaveTracesKey?.addEventListener('click', () => applyMapLayerSelection({ force: true }));
+elTracesKey?.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  applyMapLayerSelection({ force: true });
+});
+
+initMapLayerControls();
 
 // ── Footer data aggiornamento ─────────────────────────────────────────────────
 function setFooterDate(lastModified) {
@@ -157,6 +263,17 @@ elBtnInfo?.addEventListener('click', openModal);
 elModalClose?.addEventListener('click', closeModal);
 elModal?.addEventListener('click', e => { if (e.target === elModal) closeModal(); });
 
+// ── Scheda dettaglio grotta ─────────────────────────────────────────────────
+initCaveDetails({
+  caves: State.allCaves,
+  onFocusCave: cave => {
+    map.setView([cave.lat, cave.lon], 14);
+    highlightCave(cave);
+    closePanel();
+  },
+});
+setCaveDetailsHandler(cave => openCaveDetails(cave));
+
 // ── Provincia ─────────────────────────────────────────────────────────────────
 elProvincia?.addEventListener('change', () => {
   setProvince(elProvincia.value);
@@ -197,7 +314,7 @@ function onCaveSearch() {
   if (!q || !State.allCaves.length) return;
 
   const matches = State.allCaves
-    .filter(c => c.name.toLowerCase().includes(q))
+    .filter(c => caveSearchText(c).includes(q))
     .slice(0, 20);
 
   if (!matches.length) {
@@ -209,17 +326,26 @@ function onCaveSearch() {
   matches.forEach(c => {
     const div = document.createElement('div');
     div.className   = 'cave-result-item';
-    div.textContent = c.name;
+    div.textContent = getCaveDisplayName(c);
     div.addEventListener('click', () => {
       map.setView([c.lat, c.lon], 14);
       elCaveResults.classList.remove('visible');
-      if (elCaveSearch) elCaveSearch.value = c.name;
+      if (elCaveSearch) elCaveSearch.value = getCaveDisplayName(c);
       highlightCave(c);
       closePanel();   // Fix 1: chiudi hamburger su mobile dopo selezione
     });
     elCaveResults.appendChild(div);
   });
   elCaveResults.classList.add('visible');
+}
+
+function caveSearchText(cave) {
+  return [
+    cave.name,
+    cave.rawName,
+    cave.code,
+    cave.synonyms,
+  ].filter(Boolean).join(' ').toLowerCase();
 }
 
 // Binding ricerca grotta — sia click che touchend per mobile
@@ -289,7 +415,7 @@ elBtnClear?.addEventListener('click', () => {
 
 // ── Avvio automatico ──────────────────────────────────────────────────────────
 async function init() {
-  log('CaSpLo2GPX web 1.0.1');
+  log('CaSpLo2GPX web 1.0.2');
   log('Scarica e converte il Catasto Speleologico Lombardo in GPX');
   log('');
   log('⬇  Download KML in corso…');
@@ -304,6 +430,7 @@ async function init() {
     log(fromCache ? '✓  KML letto dalla cache Cloudflare' : '✓  KML scaricato');
 
     State.allCaves = parseKml(kmlText, (pct, label) => setProgress(pct, label));
+    setCaveDetailsCaves(State.allCaves);
     log(`✓  ${State.allCaves.length} grotte caricate`);
 
     setProgress(95, 'Rendering mappa…');

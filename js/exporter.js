@@ -3,6 +3,8 @@
  * Genera il file GPX e avvia il download nel browser.
  */
 
+import { getCaveDisplayName } from './cave.js';
+
 function escXml(s) {
   return String(s)
     .replace(/&/g,  '&amp;')
@@ -32,17 +34,20 @@ export function generateGpx(caves) {
   const today = new Date().toISOString().split('T')[0];
 
   const wpts = caves.map(c => {
+    const name = getCaveDisplayName(c);
+    const sourceUrl = c.sourceUrl || c.apriUrl || '';
+    const directionsUrl = c.directionsUrl || c.vaiUrl || '';
     const descParts = [
       c.plain,
-      c.apriUrl ? `Apri: ${c.apriUrl}` : '',
-      c.vaiUrl  ? `Vai a: ${c.vaiUrl}` : '',
+      sourceUrl ? `Fonte: ${sourceUrl}` : '',
+      directionsUrl ? `Vai a: ${directionsUrl}` : '',
     ].filter(Boolean).join('\n');
 
     return `  <wpt lat="${c.lat}" lon="${c.lon}">
     <ele>${c.ele}</ele>
-    <name>${escXml(c.name)}</name>
+    <name>${escXml(name)}</name>
     ${descParts ? `<desc>${escXml(descParts)}</desc>` : ''}
-    ${c.apriUrl ? `<link href="${escXml(c.apriUrl)}"><text>${escXml(c.name)}</text><type>text/html</type></link>` : ''}
+    ${sourceUrl ? `<link href="${escXml(sourceUrl)}"><text>${escXml(name)}</text><type>text/html</type></link>` : ''}
   </wpt>`;
   }).join('\n');
 
